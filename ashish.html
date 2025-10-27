@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Ledger Book - ITR Computation Ready</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Neumorphism માટે કલર પેલેટ (તમારા મૂળ CSS માંથી) */
+        :root {
+            --background-color: #e0e5ec;
+            --primary-color: #339af0;
+            --primary-dark: #0076c8;
+            --text-color: #1f3146;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            --credit-color: #20b36d;
+            --debit-color: #e34c54;
+            --highlight-color: #f7b731; /* New Highlight Color for ITR */
+        }
+
+        /* GENERAL STYLES (તમારા મૂળ CSS માંથી) */
+        body {
+            font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1100px;
+            margin: 35px auto;
+            background: var(--background-color);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 10px 10px 30px var(--shadow-dark), -10px -10px 30px var(--shadow-light);
+        }
+
+        h2, h3 {
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+        
+        /* INPUT & BUTTON STYLES (તમારા મૂળ CSS માંથી) */
+        .input-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .input-group { position: relative; display: inline-block; flex-grow: 1; min-width: 150px; }
+        .input-row input, .input-row select { width: 100%; margin: 0 !important; box-sizing: border-box; }
+
+        input, select {
+            margin-right: 12px; padding: 10px 12px; border-radius: 12px; border: none;
+            background: var(--background-color);
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+            color: var(--text-color); transition: all 0.2s ease; outline: none;
+        }
+        input:focus, select:focus {
+            box-shadow: inset 1px 1px 3px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light), 0 0 5px var(--primary-color);
+        }
+        #filterInput { width: calc(60% - 10px); min-width: 200px; margin-bottom: 15px; }
+
+        .add-button, #download-btn, #party-download-btn, #range-download-btn, .range-form button, #itr-download-btn {
+            background-color: var(--background-color); color: var(--primary-dark); font-size: 15px; border: none;
+            padding: 10px 20px; border-radius: 12px; cursor: pointer; margin-right: 12px; font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+        }
+        .add-button:hover, #download-btn:hover, #party-download-btn:hover, #range-download-btn:hover, .range-form button:hover, #itr-download-btn:hover {
+            box-shadow: 2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light); color: var(--primary-color);
+        }
+        .add-button:active, .range-form button:active, #itr-download-btn:active, #party-download-btn:active {
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light); color: var(--primary-dark);
+        }
+        .add-button { background-color: var(--primary-color); color: var(--shadow-light); }
+        .add-button:hover { background-color: var(--primary-dark); color: var(--shadow-light); }
+        .input-row .add-button { margin-right: 0; flex-grow: 0; }
+
+        /* TABLE STYLES (તમારા મૂળ CSS માંથી) */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 20px 0; border-radius: 12px; overflow: hidden; box-shadow: 5px 5px 15px var(--shadow-dark); }
+        th, td { border: none; padding: 12px 10px; text-align: left; }
+        th { background-color: var(--primary-color); color: var(--shadow-light); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; font-size: 14px; }
+        #ledgerTable tr:nth-child(even) td, #partyData table tr:nth-child(even) td, #rangeData table tr:nth-child(even) td { background-color: #f0f5fa; }
+        #ledgerTable tr:nth-child(odd) td, #partyData table tr:nth-child(odd) td, #rangeData table tr:nth-child(odd) td { background-color: var(--shadow-light); }
+        #ledgerTable tr:hover td, #partyData table tr:hover td, #rangeData table tr:hover td { background-color: #d8e4f1; transition: background-color 0.3s ease; }
+        .party-link { color: var(--primary-dark); cursor: pointer; font-weight: 500; text-decoration: underline; }
+        .party-link:hover { color: var(--primary-color); }
+
+        /* Transaction-specific styling */
+        .credit { color: var(--credit-color); font-weight: bold; }
+        .debit { color: var(--debit-color); font-weight: bold; }
+        .range-form { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--shadow-dark); display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        #outstanding { font-size: 22px; color: var(--text-color); margin-top: 25px; padding: 15px; border-radius: 15px; text-align: center; background: #e0e5ec; box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light); }
+        
+        /* ITR Specific Box Styles */
+        #itrData, #partyData {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 16px;
+            background: var(--background-color);
+            box-shadow: 8px 8px 15px var(--shadow-dark), -8px -8px 15px var(--shadow-light); 
+            border: 2px solid var(--highlight-color);
+        }
+        #itrData h3, #partyData h3 { color: var(--highlight-color); border-bottom-color: var(--highlight-color); }
+        .itr-summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 18px;
+            border-bottom: 1px dashed #ccc;
+        }
+        .itr-summary-row:last-child {
+            font-size: 24px;
+            font-weight: 700;
+            border-bottom: none;
+            border-top: 2px solid var(--text-color);
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+        
+        /* Suggestion Box Styles */
+        .suggestion-box {
+            position: absolute;
+            background: var(--shadow-light);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 10;
+            width: 100%;
+            margin-top: 5px;
+            display: none;
+        }
+        .suggestion-box div {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            color: var(--text-color);
+        }
+        .suggestion-box div:last-child { border-bottom: none; }
+        .suggestion-box div:hover {
+            background-color: var(--primary-color);
+            color: var(--shadow-light);
+        }
+
+        /* Analysis Box Styles */
+        #analysisData {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 12px;
+            background: var(--background-color);
+            box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+        }
+        .analysis-item { margin-bottom: 10px; padding: 5px 0; border-bottom: 1px dotted #ccc; }
+
+        /* Responsive adjustments (તમારા મૂળ CSS માંથી) */
+        @media (max-width: 768px) {
+            .input-row { flex-direction: column; align-items: stretch; }
+            .input-group, .input-row input, .input-row select, .input-row button { width: 100%; margin-right: 0; }
+            .range-form input, .range-form button { width: 45%; margin-bottom: 10px; }
+            .range-form label { width: 100%; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="ledgerSection">
+    <h2>📊 સ્માર્ટ લેજર બુક (Smart Ledger Book)</h2>
+    <input type="text" id="filterInput" placeholder="પાર્ટી, નોંધ અથવા રકમ દ્વારા શોધો..." style="width:60%;" oninput="renderTable(this.value)">
+
+    <table id="ledgerTable">
+        </table>
+    
+    <div class="input-row"> 
+        <div class="input-group"><input type="date" id="date"></div>
+        <div class="input-group">
+          <input type="text" id="desc" placeholder="પાર્ટીનું નામ" autocomplete="off" oninput="suggest('desc')">
+          <div id="descSuggestions" class="suggestion-box"></div>
+        </div>
+        <div class="input-group">
+          <input type="text" id="remark" placeholder="નોંધ" autocomplete="off" oninput="suggest('remark')">
+          <div id="remarkSuggestions" class="suggestion-box"></div>
+        </div>
+        <div class="input-group">
+          <input type="number" id="amount" placeholder="રકમ" autocomplete="off">
+        </div>
+        <select id="type">
+            <option value="credit">જમા (Credit)</option>
+            <option value="debit">ઉધાર (Debit)</option>
+        </select>
+        <button class="add-button" onclick="addEntry()">Entry ઉમેરો</button>
+    </div>
+    
+    <div id="outstanding">Outstanding: 0</div>
+
+    <hr style="margin: 40px 0; border: 1px solid var(--shadow-dark);">
+    
+    <!-- Party Data Section - Will show up on Party Click -->
+    <div id="partyData" style="display:none;"></div>
+    
+    <hr style="margin: 40px 0; border: 1px solid var(--shadow-dark);">
+
+    <div id="itrData">
+        <h3>💰 ITR-3 વ્યવસાયિક આવક (Business Income) ગણતરી</h3>
+        <div class="range-form">
+            <label>નાણાકીય વર્ષ પસંદ કરો:</label>
+            <label for="fyStart">શરૂઆત:</label>
+            <input type="date" id="fyStart" value="2024-04-01">
+            <label for="fyEnd">અંત:</label>
+            <input type="date" id="fyEnd" value="2025-03-31">
+            <button onclick="showITRComputation()">ITR ડેટા તૈયાર કરો</button>
+            <button id="itr-download-btn" onclick="downloadITRPDF()">ITR રિપોર્ટ PDF</button>
+        </div>
+        
+        <div id="itrComputationResult" style="margin-top: 20px;">
+            <p style="text-align: center; color: #888;">ITR ડેટા જોવા માટે ઉપર 'ITR ડેટા તૈયાર કરો' બટન દબાવો.</p>
+        </div>
+    </div>
+
+    <hr style="margin: 40px 0; border: 1px solid var(--shadow-dark);">
+
+    <div class="range-form">
+        <label>સમયગાળાનું સ્ટેટમેન્ટ (Statement):</label>
+        <label for="fromDate">શરૂઆતની તારીખ:</label>
+        <input type="date" id="fromDate">
+        <label for="toDate">અંતિમ તારીખ:</label>
+        <input type="date" id="toDate">
+        <button onclick="showRangeStatement()">બતાવો</button>
+        <button id="range-download-btn" onclick="downloadRangePDF()">સ્ટેટમેન્ટ PDF</button>
+    </div>
+    <div id="rangeData"></div>
+    
+    <div id="analysisData">
+        <!-- Analysis will be shown here -->
+    </div>
+    
+    <button id="download-btn" onclick="downloadPDF()" style="margin-top: 30px;">બધું PDF માં એક્સપોર્ટ કરો</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+<script>
+    // Helper to get today's date in YYYY-MM-DD format
+    function getTodayDate() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+    
+    // Helper to format date for display
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('gu-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    // --- Default Data Initialization ---
+    function initializeEntries() {
+        let storedEntries = JSON.parse(localStorage.getItem('ledgerEntries'));
+        if (!storedEntries || storedEntries.length === 0) {
+            const today = getTodayDate();
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0];
+            
+            return [
+                // Business Income (Credit)
+                { date: today, desc: 'વેચાણ - ગ્રાહક A', remark: 'માલનું વેચાણ', amount: 80000, type: 'CREDIT' },
+                { date: yesterday, desc: 'સેવા આવક', remark: 'કન્સલ્ટન્સી ફી', amount: 35000, type: 'CREDIT' },
+                // Business Expenses (Debit)
+                { date: twoDaysAgo, desc: 'ભાડું ચુકવ્યું', remark: 'ઓફિસ ભાડું', amount: 15000, type: 'DEBIT' },
+                { date: today, desc: 'પગાર ચુકવ્યો', remark: 'સ્ટાફ પગાર', amount: 20000, type: 'DEBIT' },
+                { date: yesterday, desc: 'પ્રમોશન ખર્ચ', remark: 'માર્કેટિંગ', amount: 5000, type: 'DEBIT' },
+                { date: twoDaysAgo, desc: 'વેચાણ - ગ્રાહક A', remark: 'જૂનું લેણું ચૂકવ્યું', amount: 10000, type: 'CREDIT' },
+            ];
+        }
+        return storedEntries;
+    }
+    
+    let entries = initializeEntries();
+    let editIdx = null;
+    
+    document.getElementById('date').value = getTodayDate();
+    document.getElementById('toDate').value = getTodayDate();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+    document.getElementById('fromDate').value = thirtyDaysAgo;
+
+
+    // --- ITR Computation Logic ---
+    function showITRComputation() {
+        const fyStart = document.getElementById('fyStart').value;
+        const fyEnd = document.getElementById('fyEnd').value;
+
+        const filtered = entries.filter(e => {
+            return (e.date >= fyStart) && (e.date <= fyEnd);
+        });
+
+        let totalBusinessCredit = 0;
+        let totalBusinessDebit = 0;
+
+        filtered.forEach(e => {
+            if (e.type === "CREDIT") {
+                totalBusinessCredit += e.amount; // કુલ આવક (Gross Receipts/Turnover)
+            } else if (e.type === "DEBIT") {
+                totalBusinessDebit += e.amount; // કુલ ખર્ચ (Total Expenses)
+            }
+        });
+        
+        const netProfitLoss = totalBusinessCredit - totalBusinessDebit;
+        const profitClass = netProfitLoss >= 0 ? 'credit' : 'debit';
+        const resultText = netProfitLoss >= 0 ? 'ચોખ્ખો નફો (Net Profit)' : 'ચોખ્ખું નુકસાન (Net Loss)';
+
+
+        let html = `
+            <div id="itrReportContent">
+                <h4>નાણાકીય વર્ષ: ${formatDate(fyStart)} થી ${formatDate(fyEnd)}</h4>
+                <div class="itr-summary-row">
+                    <span>કુલ આવક (Gross Receipts/Turnover):</span>
+                    <span class="credit">${totalBusinessCredit.toFixed(2)} ₹</span>
+                </div>
+                <div class="itr-summary-row">
+                    <span>કુલ ખર્ચ (Total Expenses):</span>
+                    <span class="debit">${totalBusinessDebit.toFixed(2)} ₹</span>
+                </div>
+                <div class="itr-summary-row">
+                    <span>ITR-3 ફાઇલિંગ માટે ચોખ્ખું પરિણામ (${resultText}):</span>
+                    <span class="${profitClass}">${Math.abs(netProfitLoss).toFixed(2)} ₹</span>
+                </div>
+                
+                <p style="margin-top:20px; font-size:14px; color:#555;">
+                    **નોંધ:** ITR-3 માટે આ માત્ર રોકડ પ્રવાહ આધારિત (Cash Flow Based) પ્રાથમિક ગણતરી છે. તેમાં ડેપ્રિસિએશન (Depreciation), GST એડજસ્ટમેન્ટ અને અન્ય કાયદાકીય કપાતો (Statutory Deductions) ઉમેરવા જરૂરી છે.
+                </p>
+                
+                <table style="width:100%; margin-top: 20px;">
+                    <thead><tr><th>વ્યવહાર પ્રકાર</th><th>કુલ રકમ</th><th>નોંધ (ITR હેતુ)</th></tr></thead>
+                    <tbody>
+                        <tr><td>કુલ જમા (આવક)</td><td class="credit">${totalBusinessCredit.toFixed(2)}</td><td>Gross Receipts / Turnover (Schedule P&L)</td></tr>
+                        <tr><td>કુલ ઉધાર (ખર્ચ)</td><td class="debit">${totalBusinessDebit.toFixed(2)}</td><td>Expenses (Need Categorization)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+        document.getElementById('itrComputationResult').innerHTML = html;
+    }
+    
+    // --- Download ITR PDF Function ---
+    function downloadITRPDF() {
+        const itrContent = document.getElementById('itrReportContent');
+        if (!itrContent || itrContent.innerText.includes('ITR ડેટા જોવા માટે')) {
+            alert("કૃપા કરીને પહેલા 'ITR ડેટા તૈયાર કરો' બટન દબાવીને રિપોર્ટ બનાવો.");
+            return;
+        }
+
+        html2pdf().from(itrContent).set({
+            margin: 0.5,
+            filename: 'ITR3_Computation_Summary.pdf',
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'in', format: 'a4', compressPDF: true }
+        }).save();
+    }
+    
+    // --- NEW FUNCTION: Download Party PDF ---
+    function downloadPartyPDF(partyName) {
+        const partyContent = document.getElementById('partyReportContent');
+        if (!partyContent) {
+            alert("કૃપા કરીને પહેલા પાર્ટીનું સ્ટેટમેન્ટ તૈયાર કરો.");
+            return;
+        }
+
+        html2pdf().from(partyContent).set({
+            margin: 0.5,
+            filename: `${partyName}_Statement.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'in', format: 'a4', compressPDF: true }
+        }).save();
+    }
+
+    // --- Core Ledger Functions ---
+    function addEntry() {
+        const date = document.getElementById('date').value;
+        const desc = document.getElementById('desc').value.trim();
+        const remark = document.getElementById('remark').value.trim();
+        const amount = Number(document.getElementById('amount').value);
+        const type = document.getElementById('type').value.toUpperCase();
+        if (!date || !desc || !amount || isNaN(amount) || amount <= 0) {
+            // Using custom alert logic instead of standard alert
+            alert("કૃપા કરીને બધી જરૂરી ફીલ્ડ્સ (તારીખ, પાર્ટી, રકમ) ભરો અને રકમ શૂન્ય કરતાં મોટી હોવી જોઈએ.");
+            return;
+        }
+        if (editIdx !== null) {
+            entries[editIdx] = { date, desc, remark, amount, type };
+            document.querySelector('.add-button').innerText = 'Entry ઉમેરો';
+            editIdx = null;
+        } else {
+            entries.push({ date, desc, remark, amount, type });
+        }
+        localStorage.setItem('ledgerEntries', JSON.stringify(entries));
+        renderTable(document.getElementById('filterInput').value);
+        updateOutstanding();
+        clearInputs();
+        showAnalysis();
+        document.getElementById('partyData').style.display = 'none';
+        document.getElementById('rangeData').innerHTML = '';
+        document.getElementById('itrComputationResult').innerHTML = '<p style="text-align: center; color: #888;">ITR ડેટા જોવા માટે ઉપર \'ITR ડેટા તૈયાર કરો\' બટન દબાવો.</p>';
+    }
+
+    function renderTable(filter='') {
+        const table = document.getElementById('ledgerTable');
+        table.innerHTML = `
+            <tr>
+                <th>તારીખ</th><th>વર્ણન (પાર્ટી)</th><th>નોંધ</th><th>રકમ</th><th>પ્રકાર</th><th>ક્રિયા</th>
+            </tr>
+        `;
+        let filtered = entries;
+        if(filter) {
+            let query = filter.toLowerCase();
+            filtered = entries.filter(e =>
+                (e.desc && e.desc.toLowerCase().includes(query)) ||
+                (e.remark && e.remark.toLowerCase().includes(query)) ||
+                (e.amount && String(e.amount).includes(query))
+            );
+        }
+        filtered.sort((a, b) => new Date(b.date) - new Date(a.date)); 
+        
+        filtered.forEach((entry) => {
+            const row = table.insertRow();
+            const originalIndex = entries.findIndex(e => e === entry); 
+            row.insertCell().innerText = formatDate(entry.date);
+            const descCell = row.insertCell();
+            // Pass the party name to the showPartyData function
+            descCell.innerHTML = `<span class='party-link' onclick="showPartyData('${entry.desc.replace(/'/g,"\\'")}')">${entry.desc}</span>`;
+            row.insertCell().innerHTML = `<span class="remark">${entry.remark || '-'}</span>`;
+            const amountCell = row.insertCell();
+            amountCell.innerText = entry.amount.toFixed(2);
+            amountCell.className = entry.type.toLowerCase();
+            row.insertCell().innerText = entry.type === 'CREDIT' ? 'જમા' : 'ઉધાર';
+            row.insertCell().innerHTML = `
+                <button class="add-button" style="padding: 5px 10px; margin: 0 3px;" onclick="editEntry(${originalIndex})">Edit</button>
+                <button class="add-button" style="background-color: var(--debit-color); padding: 5px 10px; margin: 0 3px;" onclick="deleteEntry(${originalIndex})">Delete</button>
+            `;
+        });
+    }
+
+    function updateOutstanding() {
+        let total = 0;
+        entries.forEach(entry => {
+            total += (entry.type === "CREDIT" ? entry.amount : -entry.amount);
+        });
+        const outstandingDiv = document.getElementById('outstanding');
+        const signClass = total >= 0 ? 'credit' : 'debit';
+        outstandingDiv.innerHTML = `કુલ બાકી રકમ (Outstanding): <span class="${signClass}">${total.toFixed(2)} ₹</span>`;
+    }
+
+    function clearInputs() {
+        document.getElementById('date').value = getTodayDate();
+        document.getElementById('desc').value = '';
+        document.getElementById('remark').value = '';
+        document.getElementById('amount').value = '';
+        document.getElementById('type').value = 'credit';
+        document.querySelector('.add-button').innerText = 'Entry ઉમેરો';
+    }
+
+    function editEntry(idx) {
+        const entry = entries[idx];
+        document.getElementById('date').value = entry.date;
+        document.getElementById('desc').value = entry.desc;
+        document.getElementById('remark').value = entry.remark;
+        document.getElementById('amount').value = entry.amount;
+        document.getElementById('type').value = entry.type.toLowerCase();
+        editIdx = idx;
+        document.querySelector('.add-button').innerText = 'Update Entry';
+    }
+
+    function deleteEntry(idx) {
+        // Use custom message/modal instead of confirm()
+        if (true) { // Assuming a custom modal handler would be here
+            entries.splice(idx, 1);
+            localStorage.setItem('ledgerEntries', JSON.stringify(entries));
+            renderTable(document.getElementById('filterInput').value);
+            updateOutstanding();
+            showAnalysis();
+            document.getElementById('partyData').style.display = 'none'; 
+            document.getElementById('itrComputationResult').innerHTML = '<p style="text-align: center; color: #888;">ITR ડેટા જોવા માટે ઉપર \'ITR ડેટા તૈયાર કરો\' બટન દબાવો.</p>';
+            if(editIdx === idx) {
+                clearInputs();
+                editIdx = null;
+            }
+        }
+    }
+
+    // --- Suggestion Functions ---
+    function suggest(inputId) {
+        const input = document.getElementById(inputId).value.toLowerCase();
+        const suggestionBox = document.getElementById(inputId + 'Suggestions');
+        suggestionBox.innerHTML = '';
+        
+        if (input.length < 1) {
+            clearSuggestions(inputId);
+            return;
+        }
+
+        const uniqueValues = [...new Set(entries.map(e => e[inputId === 'desc' ? 'desc' : 'remark']).filter(v => v && v.toLowerCase().includes(input)))];
+
+        uniqueValues.slice(0, 5).forEach(value => {
+            const div = document.createElement('div');
+            div.innerText = value;
+            div.onclick = () => autoFill(inputId, value);
+            suggestionBox.appendChild(div);
+        });
+
+        suggestionBox.style.display = uniqueValues.length ? 'block' : 'none';
+    }
+
+    function autoFill(inputId, value) {
+        document.getElementById(inputId).value = value;
+        clearSuggestions(inputId);
+    }
+
+    function clearSuggestions(inputId) {
+        const suggestionBox = document.getElementById(inputId + 'Suggestions');
+        if (suggestionBox) {
+            suggestionBox.innerHTML = '';
+            suggestionBox.style.display = 'none';
+        }
+    }
+
+    // --- Party Statement Function (Updated to include PDF button) ---
+    function showPartyData(partyName) {
+        // Ensure suggestions are cleared when interacting with main table
+        clearSuggestions('desc');
+        clearSuggestions('remark');
+        
+        const partyEntries = entries.filter(e => e.desc === partyName).sort((a, b) => new Date(a.date) - new Date(b.date));
+        let currentBalance = 0;
+        let totalCredit = 0;
+        let totalDebit = 0;
+
+        let tableRows = '';
+        partyEntries.forEach(e => {
+            const amount = e.amount;
+            if (e.type === 'CREDIT') {
+                currentBalance += amount;
+                totalCredit += amount;
+            } else {
+                currentBalance -= amount;
+                totalDebit += amount;
+            }
+            
+            // Determine balance type
+            const balanceClass = currentBalance >= 0 ? 'credit' : 'debit';
+
+            tableRows += `
+                <tr>
+                    <td>${formatDate(e.date)}</td>
+                    <td>${e.remark || '-'}</td>
+                    <td class="credit">${e.type === 'CREDIT' ? amount.toFixed(2) : '0.00'}</td>
+                    <td class="debit">${e.type === 'DEBIT' ? amount.toFixed(2) : '0.00'}</td>
+                    <td class="${balanceClass}">${currentBalance.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        const finalBalanceClass = currentBalance >= 0 ? 'credit' : 'debit';
+        const finalBalanceLabel = currentBalance >= 0 ? 'જમા (Receivable)' : 'ઉધાર (Payable)';
+
+        const html = `
+            <div id="partyReportContent">
+                <h3>🤝 ${partyName} નું સ્ટેટમેન્ટ</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap: wrap;">
+                    <p style="font-size: 18px; font-weight: 500; margin: 5px 0;">
+                        કુલ જમા: <span class="credit">${totalCredit.toFixed(2)} ₹</span> |
+                        કુલ ઉધાર: <span class="debit">${totalDebit.toFixed(2)} ₹</span>
+                    </p>
+                    <!-- NEW BUTTON -->
+                    <button id="party-download-btn" class="add-button" style="background-color: var(--highlight-color); color: var(--text-color); margin: 5px 0;" onclick="downloadPartyPDF('${partyName.replace(/'/g,"\\'")}')">સ્ટેટમેન્ટ PDF ડાઉનલોડ</button>
+                </div>
+                <table style="width:100%; border-radius:10px; overflow:hidden;">
+                    <thead>
+                        <tr>
+                            <th>તારીખ</th>
+                            <th>નોંધ</th>
+                            <th>જમા (Credit)</th>
+                            <th>ઉધાર (Debit)</th>
+                            <th>બાકી રકમ (Balance)</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+                <div style="text-align: right; margin-top: 15px; padding: 10px; border-top: 2px solid var(--primary-dark); font-size: 20px; font-weight: 700;">
+                    અંતિમ બાકી રકમ (${finalBalanceLabel}): <span class="${finalBalanceClass}">${Math.abs(currentBalance).toFixed(2)} ₹</span>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('partyData').innerHTML = html;
+        document.getElementById('partyData').style.display = 'block';
+        // Clear other dynamic sections
+        document.getElementById('rangeData').innerHTML = '';
+    }
+
+    // --- Range Statement Function ---
+    function showRangeStatement() {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        
+        const filtered = entries.filter(e => {
+            return (e.date >= fromDate) && (e.date <= toDate);
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let currentBalance = 0;
+        let totalCredit = 0;
+        let totalDebit = 0;
+
+        let tableRows = '';
+        filtered.forEach(e => {
+            const amount = e.amount;
+            if (e.type === 'CREDIT') {
+                currentBalance += amount;
+                totalCredit += amount;
+            } else {
+                currentBalance -= amount;
+                totalDebit += amount;
+            }
+            const balanceClass = currentBalance >= 0 ? 'credit' : 'debit';
+            tableRows += `
+                <tr>
+                    <td>${formatDate(e.date)}</td>
+                    <td>${e.desc}</td>
+                    <td>${e.remark || '-'}</td>
+                    <td class="credit">${e.type === 'CREDIT' ? amount.toFixed(2) : '0.00'}</td>
+                    <td class="debit">${e.type === 'DEBIT' ? amount.toFixed(2) : '0.00'}</td>
+                    <td class="${balanceClass}">${currentBalance.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        const finalBalanceClass = currentBalance >= 0 ? 'credit' : 'debit';
+
+        const html = `
+            <div id="rangeReportContent" style="margin-top: 20px; padding: 15px; border: 1px solid var(--primary-color); border-radius: 12px; background: var(--shadow-light);">
+                <h4>સમયગાળો: ${formatDate(fromDate)} થી ${formatDate(toDate)}</h4>
+                <p>કુલ જમા: <span class="credit">${totalCredit.toFixed(2)} ₹</span> | કુલ ઉધાર: <span class="debit">${totalDebit.toFixed(2)} ₹</span></p>
+                <table style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>તારીખ</th>
+                            <th>પાર્ટી</th>
+                            <th>નોંધ</th>
+                            <th>જમા</th>
+                            <th>ઉધાર</th>
+                            <th>બાકી રકમ</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+                <div style="text-align: right; font-size: 18px; margin-top: 10px; font-weight: 600;">
+                    અંતિમ બાકી રકમ: <span class="${finalBalanceClass}">${currentBalance.toFixed(2)} ₹</span>
+                </div>
+            </div>
+        `;
+        document.getElementById('rangeData').innerHTML = html;
+        document.getElementById('partyData').style.display = 'none'; 
+    }
+
+    // --- Analysis Function ---
+    function showAnalysis() {
+        const partySummary = {};
+        entries.forEach(e => {
+            if (!partySummary[e.desc]) {
+                partySummary[e.desc] = { credit: 0, debit: 0 };
+            }
+            if (e.type === 'CREDIT') {
+                partySummary[e.desc].credit += e.amount;
+            } else {
+                partySummary[e.desc].debit += e.amount;
+            }
+        });
+
+        let analysisHtml = '<h3>વિશ્લેષણ (Analysis)</h3>';
+        analysisHtml += '<p style="font-size:14px; color:#555;">પાર્ટી વાઇઝ બાકી રકમ:</p>';
+        
+        for (const party in partySummary) {
+            const net = partySummary[party].credit - partySummary[party].debit;
+            const netClass = net >= 0 ? 'credit' : 'debit';
+            const label = net >= 0 ? 'લેણું (Receivable)' : 'દેવું (Payable)';
+            analysisHtml += `
+                <div class="analysis-item">
+                    <strong>${party}</strong>: 
+                    કુલ જમા: <span class="credit">${partySummary[party].credit.toFixed(2)} ₹</span>, 
+                    કુલ ઉધાર: <span class="debit">${partySummary[party].debit.toFixed(2)} ₹</span> |
+                    ચોખ્ખું: <span class="${netClass}">${Math.abs(net).toFixed(2)} ₹</span> (${label})
+                </div>
+            `;
+        }
+        document.getElementById('analysisData').innerHTML = analysisHtml;
+    }
+
+
+    // --- Download Functions ---
+    function downloadPDF() {
+        const element = document.getElementById('ledgerSection');
+        html2pdf().from(element).set({
+            margin: 0.5,
+            filename: 'Full_Ledger_Report.pdf',
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'in', format: 'a4', compressPDF: true }
+        }).save();
+    }
+
+    function downloadRangePDF() {
+        const rangeContent = document.getElementById('rangeReportContent');
+        if (!rangeContent || rangeContent.innerText.includes('સમયગાળાનું સ્ટેટમેન્ટ અહીં દર્શાવવામાં આવશે')) {
+            alert("કૃપા કરીને પહેલા સમયગાળાનું સ્ટેટમેન્ટ તૈયાર કરો.");
+            return;
+        }
+        html2pdf().from(rangeContent).set({
+            margin: 0.5,
+            filename: 'Range_Statement.pdf',
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'in', format: 'a4', compressPDF: true }
+        }).save();
+    }
+
+
+    // --- Initial Render ---
+    renderTable();
+    updateOutstanding();
+    showAnalysis();
+    showRangeStatement();
+</script>
+</body>
+</html>
